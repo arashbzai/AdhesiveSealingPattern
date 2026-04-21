@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>[D92A] [DR] [ADHESIVE]</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(#3a3a3a, #0f0f0f);
+  color: white;
+}
+.header {
+  background: #262626;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+}
+.main { max-width: 1300px; margin: auto; padding: 25px; }
+
+.section {
+  border: 2px solid #666;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+.section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+
+.value-box, .hmi-input {
+  background: #000;
+  border: 2px solid #fff;
+  height: 40px;
+}
+.value-box input, .hmi-input input {
+  width: 100%; height: 100%;
+  background: transparent; border: none;
+  color: white; font-size: 18px; text-align: center;
+}
+
+.sealing-grid {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr 140px;
+  gap: 15px;
+}
+.hmi-setting-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  background: linear-gradient(#2f322c,#141613);
+  border: 2px solid #888;
+}
+.hmi-card { padding: 15px; border-right: 1px dashed #777; }
+.hmi-card:last-child { border-right: none; }
+
+.unit { font-size: 11px; opacity: 0.75; text-align: center; margin-top: 4px; }
+
+button {
+  padding: 8px 14px;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+.submit { background:#2563eb; }
+.export { background:#059669; }
+.delete { background:#dc2626; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+th,td {
+  border:1px solid #666; padding:5px; text-align:center;
+}
+th { background:#222; }
+</style>
+</head>
+
+<body onload="loadRecords()">
+
+<div class="header">
+<strong>[D92A] [DR] [ADHESIVE]</strong>
+<div>Date: <span id="date"></span> | Time: <span id="time"></span></div>
+</div>
+
+<div class="main">
+
+<!-- SEALING -->
+<div class="section">
+<div class="section-title">ADHESIVE SEALING PATTERN</div>
+<div class="sealing-grid">
+<div>PURGE (cc/sec)</div><div class="value-box"><input id="p1" type="number"></div>
+<div>PRESS PRESSURE (MPa)</div><div class="value-box"><input id="p2" type="number"></div>
+<div>FILLING (cc/sec)</div><div class="value-box"><input id="p3" type="number"></div>
+<div>FILL COMPLETE PRESSURE (MPa)</div><div class="value-box"><input id="p4" type="number"></div>
+<div>PRESS (cc/sec)</div><div class="value-box"><input id="p5" type="number"></div>
+</div>
+</div>
+
+<!-- SETTING -->
+<div class="section">
+<div class="section-title">ADHESIVE SETTING</div>
+<div class="hmi-setting-grid">
+
+<div class="hmi-card">
+BOOSTER END
+<div class="hmi-input"><input id="p6" type="number"></div>
+<div class="unit">(mm)</div>
+</div>
+
+<div class="hmi-card">
+BACK POSITION
+<div class="hmi-input"><input id="p7" type="number"></div>
+<div class="unit">(mm)</div>
+</div>
+
+<div class="hmi-card">
+FILLING POSITION
+<div class="hmi-input"><input id="p8" type="number"></div>
+<div class="unit">(mm)</div>
+</div>
+
+<div class="hmi-card">
+LOW PRESSURE
+<div class="hmi-input"><input id="p9" type="number"></div>
+<div class="unit">(MPa)</div><br>
+HIGH PRESSURE
+<div class="hmi-input"><input id="p10" type="number"></div>
+<div class="unit">(MPa)</div>
+</div>
+
+</div>
+</div>
+
+<input id="tech" placeholder="Technician Name">
+<br><br>
+
+<button class="submit" onclick="submitSaveAndShare()">Submit & Share WhatsApp</button>
+<button class="export" onclick="exportCSV()">Export (Admin)</button>
+<button class="delete" onclick="deleteSelected()">Delete Selected (Admin)</button>
+
+<div class="section">
+<div class="section-title">RECORD KEEPING</div>
+
+<table id="table">
+<thead>
+<tr>
+<th>Select</th>
+<th>Date</th><th>Time</th><th>Technician</th>
+<th>Purge</th><th>Press Pressure</th><th>Filling</th>
+<th>Fill Pressure</th><th>Press</th>
+<th>Booster End</th><th>Back Position</th>
+<th>Filling Position</th><th>Low Pressure</th><th>High Pressure</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+setInterval(()=>{
+  const d=new Date();
+  date.textContent=d.toLocaleDateString("en-GB");
+  time.textContent=d.toLocaleTimeString();
+},1000);
+
+document.querySelectorAll("input[type=number]").forEach(i=>{
+  i.addEventListener("blur",()=>{
+    if(i.value!=="") i.value=Number(i.value).toFixed(1);
+  });
+});
+
+function submitSaveAndShare(){
+  submitRecord();
+  saveRecords();
+  generateCSV();
+  openWhatsApp();
+}
+
+function submitRecord(){
+  const v=[p1,p2,p3,p4,p5,p6,p7,p8,p9,p10].map(x=>x.value||"0.0");
+  const d=new Date();
+  document.querySelector("#table tbody").insertAdjacentHTML("afterbegin",
+  `<tr>
+    <td><input type="checkbox"></td>
+    <td>${d.toLocaleDateString("en-GB")}</td>
+    <td>${d.toLocaleTimeString()}</td>
+    <td>${tech.value||"N/A"}</td>
+    ${v.map(x=>`<td>${x}</td>`).join("")}
+  </tr>`);
+}
+
+function saveRecords(){
+  const rows=[...document.querySelectorAll("#table tbody tr")]
+    .map(r=>[...r.children].map(td=>td.innerText));
+  localStorage.setItem("adhesiveRecords",JSON.stringify(rows));
+}
+
+function loadRecords(){
+  const data=JSON.parse(localStorage.getItem("adhesiveRecords")||"[]");
+  const tb=document.querySelector("#table tbody");
+  data.forEach(r=>{
+    tb.insertAdjacentHTML("beforeend",
+    `<tr><td><input type="checkbox"></td>${r.slice(1).map(v=>`<td>${v}</td>`).join("")}</tr>`);
+  });
+}
+
+function generateCSV(){
+  let csv="Date,Time,Technician,Purge,Press Pressure,Filling,Fill Pressure,Press,Booster End,Back Position,Filling Position,Low Pressure,High Pressure\n";
+  document.querySelectorAll("#table tbody tr").forEach(r=>{
+    csv+= [...r.children].slice(1).map(td=>td.innerText).join(",")+"\n";
+  });
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+  a.download="adhesive_record_"+new Date().toISOString().slice(0,10)+".csv";
+  a.click();
+}
+
+function openWhatsApp(){
+  const msg="ADHESIVE ADJUSTMENT RECORD\n\nNew adjustment submitted.\nPlease find attached CSV file.";
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+}
+</script>
+
+</body>
+</html>
