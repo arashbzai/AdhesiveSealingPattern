@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adhesive Sealing Pattern</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(#444, #111);
+  color: white;
+}
+.header {
+  background: #2b2b2b;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+.main {
+  max-width: 1100px;
+  margin: auto;
+  padding: 30px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 150px 1fr 150px;
+  gap: 20px;
+}
+.blue-box {
+  background: #0b1dbb;
+  border: 2px solid #5f7cff;
+  height: 42px;
+}
+.blue-box input {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 18px;
+  text-align: center;
+}
+button {
+  padding: 8px 14px;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+.submit { background: #2563eb; }
+.export { background: #059669; }
+.delete { background: #dc2626; }
+
+table {
+  width: 100%;
+  margin-top: 30px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  border: 1px solid #666;
+  padding: 6px;
+  text-align: center;
+}
+th { background: #222; }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <strong>ADHESIVE SEALING PATTERN</strong>
+  <div>DATE: <span id="date"></span> | TIME: <span id="time"></span></div>
+</div>
+
+<div class="main">
+
+<div class="grid">
+  <div>PURGE (cc/sec)</div>
+  <div class="blue-box"><input id="purge" type="number" step="0.1" onblur="formatOneDecimal(this)"></div>
+
+  <div>PRESS PRESSURE (MPa)</div>
+  <div class="blue-box"><input id="pressPressure" type="number" step="0.1" onblur="formatOneDecimal(this)"></div>
+
+  <div>FILLING (cc/sec)</div>
+  <div class="blue-box"><input id="filling" type="number" step="0.1" onblur="formatOneDecimal(this)"></div>
+
+  <div>FILL COMPLETE PRESSURE (MPa)</div>
+  <div class="blue-box"><input id="fillComplete" type="number" step="0.1" onblur="formatOneDecimal(this)"></div>
+
+  <div>PRESS (cc/sec)</div>
+  <div class="blue-box"><input id="press" type="number" step="0.1" onblur="formatOneDecimal(this)"></div>
+</div>
+
+<br>
+
+<input id="techName" placeholder="Technician Name">
+<button class="submit" onclick="submitRecord()">Submit</button>
+<button class="export" onclick="exportData()">Export (Admin)</button>
+
+<table>
+<thead>
+<tr>
+  <th>Date</th>
+  <th>Time</th>
+  <th>Technician</th>
+  <th>Purge</th>
+  <th>Filling</th>
+  <th>Press</th>
+  <th>Press Pressure</th>
+  <th>Fill Complete Pressure</th>
+  <th>Delete</th>
+</tr>
+</thead>
+<tbody id="table"></tbody>
+</table>
+
+</div>
+
+<script>
+const DELETE_PIN = "7465";   // admin delete pin
+const EXPORT_PIN = "9842";   // admin export pin
+
+setInterval(() => {
+  const d = new Date();
+  date.innerText = d.toLocaleDateString("en-GB");
+  time.innerText = d.toLocaleTimeString();
+}, 1000);
+
+function formatOneDecimal(input) {
+  if (input.value !== "" && !isNaN(input.value)) {
+    input.value = Number(input.value).toFixed(1);
+  }
+}
+
+function submitRecord() {
+  const name = techName.value.trim();
+  if (!name) return alert("Enter technician name");
+
+  const fields = [purge, filling, press, pressPressure, fillComplete];
+  for (let f of fields) {
+    if (f.value === "") return alert("All parameters must be filled");
+  }
+
+  const row = table.insertRow(0);
+  const now = new Date();
+
+  const values = [
+    now.toLocaleDateString("en-GB"),
+    now.toLocaleTimeString(),
+    name,
+    purge.value,
+    filling.value,
+    press.value,
+    pressPressure.value,
+    fillComplete.value,
+  ];
+
+  values.forEach(v => row.insertCell().innerText = v);
+
+  const delCell = row.insertCell();
+  const btn = document.createElement("button");
+  btn.className = "delete";
+  btn.innerText = "Delete";
+  btn.onclick = () => deleteRow(row);
+  delCell.appendChild(btn);
+
+  purge.value = filling.value = press.value = pressPressure.value = fillComplete.value = "";
+}
+
+function deleteRow(row) {
+  const pin = prompt("Admin PIN to delete record");
+  if (pin === DELETE_PIN) row.remove();
+  else alert("Access denied");
+}
+
+function exportData() {
+  const pin = prompt("Admin PIN to export");
+  if (pin !== EXPORT_PIN) return alert("Access denied");
+
+  let csv = "Date,Time,Technician,Purge,Filling,Press,PressPressure,FillComplete\n";
+  for (let r of table.rows) {
+    csv += [...r.cells].slice(0,8).map(c => c.innerText).join(",") + "\n";
+  }
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "adhesive_sealing_" + new Date().toISOString().slice(0,10) + ".csv";
+  a.click();
+}
+</script>
+
+</body>
+</html>
